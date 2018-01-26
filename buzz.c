@@ -191,7 +191,7 @@ int main(){
 		//printf("got %d from read\n", ret);
 		//printBuzzButtons(c);
 		updateStructByRead(&hub, c);
-		if(hub.controller[0].greenBtn || hub.controller[1].greenBtn || hub.controller[2].greenBtn || hub.controller[3].greenBtn){
+		if(hub.controller[0].greenBtn && hub.controller[1].greenBtn && hub.controller[2].greenBtn && hub.controller[3].greenBtn){
 			runBashCMD("echo \"ola\" > /dev/tcp/192.168.1.4/9100");
 		}
 		printHUB(&hub);

@@ -140,7 +140,14 @@ void getRawName(unsigned long fd, char* buf){
 	}
 }
 
-int updateLights(buzz_hub* hub, int fd){
+int runBashCMD(char* cmd){
+	if(fork()==0){
+		execlp("bash", "bash", "-c", cmd, NULL);
+	}
+	return 0;
+}
+
+int updateLights(buzz_hub* hub){
 	unsigned char buf[7];
 	memset(buf, 0, 2);
 	memset(buf+6, 0, 1);
@@ -153,12 +160,8 @@ int updateLights(buzz_hub* hub, int fd){
 
 	char cmd[64];
 	sprintf(cmd, "echo -e \"\\x%02x\\x%02x\\x%02x\\x%02x\\x%02x\\x%02x\\x%02x\" > /dev/hidraw0", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
-	printf("cmd is %s.\n", cmd);
-	system(cmd);
-	int ret = write(fd, buf, 7);
-	printf("ret is %d, fd is %d\n", ret, fd);
-	perror("updateLights");
-	return ret;
+	runBashCMD(cmd);
+	return 0;
 }
 
 void sig_handler( int a){
@@ -179,7 +182,7 @@ int main(){
 
 	while(1){
 		char c[5];
-		//updateLights(&hub, fd);
+		updateLights(&hub);
 		int ret = read(fd, c, 5);
 		if(ret==-1){
 			fprintf(stderr, "The Buzz controller was disconnected. Exiting.\n");
@@ -188,8 +191,8 @@ int main(){
 		//printf("got %d from read\n", ret);
 		//printBuzzButtons(c);
 		updateStructByRead(&hub, c);
-		if(hub.controller[0].buzzBtn || hub.controller[1].buzzBtn || hub.controller[2].buzzBtn || hub.controller[3].buzzBtn){
-			system("echo \"ola\" > /dev/tcp/192.168.1.4/9100");
+		if(hub.controller[0].greenBtn || hub.controller[1].greenBtn || hub.controller[2].greenBtn || hub.controller[3].greenBtn){
+			runBashCMD("echo \"ola\" > /dev/tcp/192.168.1.4/9100");
 		}
 		printHUB(&hub);
 		//printf("done;\n");

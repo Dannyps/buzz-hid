@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <signal.h>
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \
@@ -92,6 +93,10 @@ bool updateStructByRead(buzz_hub* hub, char* c){
 	if(hub->controller[0].yellowBtn && hub->controller[1].yellowBtn && hub->controller[2].yellowBtn && hub->controller[3].yellowBtn){
 		printf("pressed yellow on all controlers!\n");
 	}
+
+	for(int i = 0; i < 4; i++){
+		hub->controller[i].light = hub->controller[i].buzzBtn;
+	}
 	return true;
 }
 
@@ -135,7 +140,33 @@ void getRawName(unsigned long fd, char* buf){
 	}
 }
 
+int updateLights(buzz_hub* hub, int fd){
+	unsigned char buf[7];
+	memset(buf, 0, 2);
+	memset(buf+6, 0, 1);
+	for(int i = 0; i<4; i++){
+		if(hub->controller[i].light)
+			buf[2+i]=0xff;
+		else
+			buf[2+i]=0x00;
+	}
+
+	char cmd[64];
+	sprintf(cmd, "echo -e \"\\x%02x\\x%02x\\x%02x\\x%02x\\x%02x\\x%02x\\x%02x\" > /dev/hidraw0", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
+	printf("cmd is %s.\n", cmd);
+	system(cmd);
+	int ret = write(fd, buf, 7);
+	printf("ret is %d, fd is %d\n", ret, fd);
+	perror("updateLights");
+	return ret;
+}
+
+void sig_handler( int a){
+	printf("=>  got signal %d\n", a);
+}
+
 int main(){
+	signal(SIGPIPE, &sig_handler);
 	buzz_hub hub;
 	int fd = open("/dev/hidraw0", O_RDWR);
 	if(fd==-1){
@@ -148,6 +179,7 @@ int main(){
 
 	while(1){
 		char c[5];
+		//updateLights(&hub, fd);
 		int ret = read(fd, c, 5);
 		if(ret==-1){
 			fprintf(stderr, "The Buzz controller was disconnected. Exiting.\n");
@@ -156,6 +188,9 @@ int main(){
 		//printf("got %d from read\n", ret);
 		//printBuzzButtons(c);
 		updateStructByRead(&hub, c);
+		if(hub->controller[0].buzzBtn || hub->controller[1].buzzBtn || hub->controller[2].buzzBtn || hub->controller[3].buzzBtn){
+			system("echo \"ola\" > /dev/tcp/192.168.1.4/9100");
+		}
 		printHUB(&hub);
 		//printf("done;\n");
 	}

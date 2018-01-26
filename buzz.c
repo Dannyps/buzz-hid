@@ -188,7 +188,7 @@ int main(){
 		//printf("got %d from read\n", ret);
 		//printBuzzButtons(c);
 		updateStructByRead(&hub, c);
-		if(hub->controller[0].buzzBtn || hub->controller[1].buzzBtn || hub->controller[2].buzzBtn || hub->controller[3].buzzBtn){
+		if(hub.controller[0].buzzBtn || hub.controller[1].buzzBtn || hub.controller[2].buzzBtn || hub.controller[3].buzzBtn){
 			system("echo \"ola\" > /dev/tcp/192.168.1.4/9100");
 		}
 		printHUB(&hub);
